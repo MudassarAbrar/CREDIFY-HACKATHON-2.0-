@@ -79,12 +79,12 @@ export const AuthSheet: React.FC<AuthSheetProps> = ({ isOpen, onClose }) => {
 
   return createPortal(
     <>
-      <div className="fixed inset-0 bg-black opacity-50 z-[1000]" onClick={onClose} />
-      <div className={`fixed right-0 top-0 h-full w-full max-w-md bg-[#1A1A1A] z-[1001] shadow-2xl transition-transform duration-300 ${isOpen ? 'animate-slide-in-right' : ''}`}>
-        {/* Close button - positioned above navbar z-index */}
+      <div className="fixed inset-0 bg-black opacity-50 z-[2999]" onClick={onClose} />
+      <div className={`fixed right-0 top-0 h-full w-full max-w-md bg-[#1A1A1A] z-[3000] shadow-2xl transition-transform duration-300 ${isOpen ? 'animate-slide-in-right' : ''}`}>
+        {/* Close button - above everything */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 md:top-8 md:right-8 text-white hover:text-gray-300 transition-colors z-[2001] p-2"
+          className="fixed top-4 right-4 md:absolute md:top-8 md:right-8 text-white hover:text-gray-300 transition-colors z-[3001] p-2"
         >
           <X size={28} />
         </button>
