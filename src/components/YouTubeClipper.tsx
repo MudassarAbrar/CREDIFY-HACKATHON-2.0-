@@ -40,9 +40,13 @@ const parseTime = (str: string): number => {
   return parts[0] || 0;
 };
 
-export const YouTubeClipper: React.FC = () => {
-  const [url, setUrl] = useState('');
-  const [videoId, setVideoId] = useState<string | null>(null);
+interface YouTubeClipperProps {
+  initialVideoId?: string;
+}
+
+export const YouTubeClipper: React.FC<YouTubeClipperProps> = ({ initialVideoId }) => {
+  const [url, setUrl] = useState(initialVideoId ? `https://youtube.com/watch?v=${initialVideoId}` : '');
+  const [videoId, setVideoId] = useState<string | null>(initialVideoId || null);
   const [clips, setClips] = useState<Clip[]>([]);
   const [startInput, setStartInput] = useState('0:00');
   const [endInput, setEndInput] = useState('0:30');
