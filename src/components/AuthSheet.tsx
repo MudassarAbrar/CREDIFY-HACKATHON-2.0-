@@ -76,9 +76,9 @@ export const AuthSheet: React.FC<AuthSheetProps> = ({ isOpen, onClose }) => {
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-8 right-8 text-white hover:text-gray-300 transition-colors"
+          className="absolute top-4 right-4 md:top-8 md:right-8 text-white hover:text-gray-300 transition-colors z-10 p-2"
         >
-          <X size={24} />
+          <X size={28} />
         </button>
 
         {/* Content */}
