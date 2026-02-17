@@ -1,129 +1,154 @@
-# Event Management Platform
+# Credify – Peer Skill Exchange
 
-A modern, full-stack event management platform built with React, TypeScript, and Lovable Cloud. Create, discover, and manage events with an intuitive interface and powerful features.
+[![CREDIFY Hackathon 2.0](https://img.shields.io/badge/CREDIFY-Hackathon%202.0-blue)](https://github.com/MudassarAbrar/CREDIFY-HACKATHON-2.0-)
 
-## 🌟 Features
+A **peer-to-peer skill exchange marketplace** where users earn credits by teaching and spend credits to learn. No cash—credits only. Built for the **CREDIFY Hackathon 2.0**.
 
-### Event Management
-- **Create Events**: Easy-to-use form with image upload, date/time selection, and location integration
-- **Edit Events**: Update your events anytime with full editing capabilities
-- **Delete Events**: Remove events you've created with confirmation dialog
-- **Event Discovery**: Browse all upcoming events in a beautiful card layout
-- **Event Details**: Rich event pages with countdown timers, location maps, and registration
+---
 
-### User Authentication
-- **Secure Sign Up/Login**: Email and password authentication with automatic email confirmation
-- **User Profiles**: Automatic profile creation with display names
-- **Protected Routes**: Secure admin and event management pages
-- **Session Management**: Persistent authentication across sessions
+## About
 
-### Location Integration
-- **Google Maps Autocomplete**: Search and select locations with autocomplete suggestions
-- **Interactive Maps**: Embedded Google Maps on event detail pages
-- **Get Directions**: Direct links to Google Maps for navigation
+Access to quality skill development is often limited by cost and lack of peer learning. Credify lets students and professionals **trade skills** using a **time- and value-based credit system**: teach to earn credits, learn by spending them. Rates can reflect user type (e.g. student vs professional) and skill complexity.
 
-### Image Management
-- **Image Upload**: Drag-and-drop or click to upload event images
-- **File Validation**: Automatic validation for file type (JPG, PNG, GIF, WebP) and size (max 5MB)
-- **Secure Storage**: Images stored securely in cloud storage
+### Features
 
-### Admin Features
-- **Admin Dashboard**: Manage all events from a centralized dashboard
-- **Event Moderation**: View, edit, or delete any event
-- **User Management**: Access to user profiles and event data
+- **Auth** – Email/password and **Google OAuth** (optional), JWT-based sessions
+- **Skills** – Create and browse skill offers/requests; your own teaching skills are hidden from browse
+- **Bookings** – Request → confirm → complete → two-party completion → **payment release** (credits)
+- **Wallet** – Live credit balance, transaction history (earn/spend), **click a row** to see who you worked with, when, and which skill
+- **Notifications** – New booking request, confirmed, payment released, new message
+- **Messages** – In-app conversations with other users
+- **Profile** – Full profile edit (name, bio, links, location, timezone, availability, education, work, languages, response time)
+- **Reviews** – Leave reviews for people you taught or learned from (from their profile or the Reviews page)
+- **Disputes** – Placeholder for future admin/agent resolution
 
-### SEO Optimized
-- **Meta Tags**: Proper title, description, and keywords for each page
-- **Semantic HTML**: Structured markup for better search engine visibility
-- **Open Graph Tags**: Social media preview optimization
-- **Responsive Design**: Mobile-first design that works on all devices
+---
 
-## Project info
+## Tech Stack
 
-**URL**: https://lovable.dev/projects/f1ba0c74-af75-4389-a8ae-60baf80911b5
+| Layer    | Stack |
+|----------|--------|
+| Frontend | React 18, Vite, TypeScript, React Router, Tailwind CSS, shadcn/ui |
+| Backend  | Node.js, Express, JWT auth |
+| Database | MySQL (users, profiles, skills, bookings, transactions, notifications, messages, reviews) |
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Quick Start
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f1ba0c74-af75-4389-a8ae-60baf80911b5) and start prompting.
+- **Node.js** 18+ and npm
+- **MySQL** (local or remote)
+- (Optional) Google Cloud project for OAuth
 
-Changes made via Lovable will be committed automatically to this repo.
+### 1. Clone and install
 
-**Use your preferred IDE**
+```bash
+git clone https://github.com/MudassarAbrar/CREDIFY-HACKATHON-2.0-.git
+cd CREDIFY-HACKATHON-2.0-
+npm install
+cd server && npm install && cd ..
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 2. Environment
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Backend:** Create `server/.env` with the variables listed in **[ENV_SETUP.md](./ENV_SETUP.md)**.
+- **Frontend:** Create `.env` in the project root if you need to override API URL or enable Google sign-in.
 
-Follow these steps:
+**Required (backend `server/.env`):**
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT` – MySQL
+- `JWT_SECRET` – e.g. generate with:  
+  `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`  
+  See [ENV_SETUP.md](./ENV_SETUP.md) for more options.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+**Optional:** `GOOGLE_CLIENT_ID` (backend) and `VITE_GOOGLE_CLIENT_ID` (frontend) for “Continue with Google”. Details in [ENV_SETUP.md](./ENV_SETUP.md).
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 3. Database
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+cd server
+node run-migration.js
+# If you have seed data:
+# node migrations/seed-data.js
+cd ..
+```
+
+### 4. Run
+
+**Terminal 1 – backend:**
+
+```bash
+cd server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+**Terminal 2 – frontend:**
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+npm run dev
+```
 
-**Use GitHub Codespaces**
+- Frontend: **http://localhost:8080** (or the port Vite prints)
+- API: **http://localhost:3001**
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Project Structure
 
-This project is built with:
+```
+├── src/                    # React frontend (Vite)
+│   ├── components/         # UI components (Navbar, SkillCard, TransactionHistory, etc.)
+│   ├── contexts/           # Auth context
+│   ├── hooks/              # useToast, etc.
+│   ├── lib/                # API client, types
+│   └── pages/              # Login, Register, Browse, Bookings, Wallet, Profile, Reviews, Messages, etc.
+├── server/                 # Express backend
+│   ├── controllers/        # Auth, bookings, messages, notifications, profiles, skills, transactions, reviews
+│   ├── middleware/         # JWT auth
+│   ├── migrations/         # SQL migrations + seed
+│   ├── routes/
+│   └── services/           # Credits, notifications
+├── public/
+├── ENV_SETUP.md            # Environment variables and JWT/Google setup
+├── PRD_PeerSkillExchange.md # Product requirements (current status)
+└── README.md               # This file
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## Configuration
+## API Overview
 
-### Google Maps Places Autocomplete
+| Area        | Examples |
+|------------|----------|
+| Auth       | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, Google OAuth |
+| Profiles   | `GET/PUT /api/profiles/:id`, `GET /api/profiles/:id/stats` |
+| Skills     | `GET/POST /api/skills`, skill requests |
+| Bookings   | `GET/POST /api/bookings`, confirm, cancel, complete, confirm-completion |
+| Transactions | `GET /api/transactions` (with booking/other-party details) |
+| Notifications | `GET /api/notifications` |
+| Messages   | `GET/POST /api/messages`, conversations |
+| Reviews    | `GET/POST /api/reviews` |
 
-This project uses Google Maps Places API for location autocomplete. To enable this feature:
+All protected routes use `Authorization: Bearer <token>`.
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select an existing one
-3. Enable the **Places API (New)** in the API Library
-4. Go to **Credentials** → **Create Credentials** → **API Key**
-5. Copy the API key
-6. Add it to your `.env` file:
-   ```
-   VITE_GOOGLE_MAPS_API_KEY="your-api-key-here"
-   ```
+---
 
-**Optional but recommended:** Restrict your API key to only work with the Places API and your domain for security.
+## Documentation
 
-## How can I deploy this project?
+- **[ENV_SETUP.md](./ENV_SETUP.md)** – Environment variables, JWT_SECRET, Google OAuth
+- **[PRD_PeerSkillExchange.md](./PRD_PeerSkillExchange.md)** – Product requirements and current feature set
+- **[server/README.md](./server/README.md)** – Backend setup and schema summary
 
-Simply open [Lovable](https://lovable.dev/projects/f1ba0c74-af75-4389-a8ae-60baf80911b5) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## License
 
-Yes, you can!
+This project was built for **CREDIFY Hackathon 2.0**. See repository license for terms.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Repository
+
+**GitHub:** [github.com/MudassarAbrar/CREDIFY-HACKATHON-2.0-](https://github.com/MudassarAbrar/CREDIFY-HACKATHON-2.0-)
