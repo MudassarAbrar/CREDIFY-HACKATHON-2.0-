@@ -57,13 +57,25 @@ export default function UserProfile() {
     }
   }, [userId]);
 
+  const normalizeReview = (r: any) => ({
+    id: String(r.id),
+    reviewerId: String(r.reviewer_id),
+    revieweeId: String(r.reviewee_id),
+    bookingId: r.booking_id != null ? String(r.booking_id) : undefined,
+    rating: Number(r.rating),
+    reviewText: r.review_text ?? r.reviewText,
+    reviewType: (r.review_type ?? r.reviewType) === 'as_learner' ? 'as_learner' : 'as_teacher',
+    createdAt: r.created_at ?? r.createdAt ?? new Date().toISOString(),
+    reviewerName: r.reviewer_name ?? r.reviewerName,
+    reviewerEmail: r.reviewer_email ?? r.reviewerEmail,
+  });
+
   const loadProfile = async () => {
     try {
       setLoading(true);
       const profileResponse = await profilesApi.getProfile(parseInt(userId!));
       const statsResponse = await profilesApi.getUserStats(parseInt(userId!));
       
-      // Parse profile data with proper field mapping
       const rawProfile = profileResponse.user.profile || {};
       const profileData = {
         linkedinUrl: rawProfile.linkedin_url,
@@ -95,7 +107,6 @@ export default function UserProfile() {
       };
       setUser(profileUser);
 
-      // Load skills taught
       const skillsResponse = await skillsApi.getSkills({});
       const userSkills = (skillsResponse.skills || [])
         .filter((s: any) => s.user_id === parseInt(userId!) && s.status === 'active')
@@ -114,9 +125,15 @@ export default function UserProfile() {
         }));
       setSkills(userSkills);
 
-      // Load reviews
-      const reviewsResponse = await reviewsApi.getUserReviews(parseInt(userId!));
-      setReviews(reviewsResponse.reviews || []);
+      // Load reviews separately so profile still shows if reviews fail
+      try {
+        const reviewsResponse = await reviewsApi.getUserReviews(parseInt(userId!));
+        const rawReviews = Array.isArray(reviewsResponse?.reviews) ? reviewsResponse.reviews : [];
+        setReviews(rawReviews.map(normalizeReview));
+      } catch (reviewErr: any) {
+        setReviews([]);
+        console.warn('Failed to load profile reviews:', reviewErr?.message || reviewErr);
+      }
     } catch (error: any) {
       toast({
         title: "Error",

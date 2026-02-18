@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Trash2, User, MoreVertical } from "lucide-react";
+import { MessageSquare, Send, Trash2, User, MoreVertical, Search, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Conversation, Message } from "@/lib/types";
@@ -58,10 +58,10 @@ const convertConversation = (conv: any, currentUserId: string): Conversation => 
     lastMessageAt: conv.last_message_at,
     createdAt: conv.created_at,
     otherUserId: String(conv.other_user_id || (isParticipant1 ? conv.participant2_id : conv.participant1_id)),
-    otherUserName: conv.other_user_name || conv.other_user_email?.split('@')[0] || 'User',
+    otherUserName: conv.other_user_name || (conv.other_user_email ? conv.other_user_email.split('@')[0] : null) || 'User',
     otherUserEmail: conv.other_user_email,
     otherUserAvatar: conv.other_user_avatar,
-    unreadCount: conv.unread_count || 0,
+    unreadCount: Math.max(0, Number(conv.unread_count) || 0),
     lastMessage: conv.last_message,
   };
 };
@@ -91,9 +91,17 @@ export default function Messages() {
   const [sending, setSending] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const currentUser = getCurrentUser();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const filteredConversations = conversations.filter(
+    (c) =>
+      !searchQuery.trim() ||
+      (c.otherUserName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.otherUserEmail?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -218,17 +226,34 @@ export default function Messages() {
     );
   }
 
+  const handleBackToList = () => {
+    setSearchParams({});
+    setActiveConversation(null);
+    setMessages([]);
+  };
+
   return (
     <div className="min-h-screen">
       <Navbar />
       <main className="container py-8">
         <h1 className="mb-6 text-3xl font-bold">Messages</h1>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Conversations List */}
-          <div className="lg:col-span-1">
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <ScrollArea className="h-[600px]">
+          {/* Conversations List - hidden on mobile when a conversation is selected */}
+          <div className={`lg:col-span-1 ${activeConversation ? "hidden lg:block" : ""}`}>
+            <Card className="overflow-hidden flex flex-col max-h-[calc(100vh-12rem)] lg:max-h-[600px]">
+              <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+                <div className="p-2 border-b shrink-0">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search conversations..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                </div>
+                <ScrollArea className="flex-1 min-h-0">
                   {loading ? (
                     <div className="p-4 text-center text-muted-foreground">Loading...</div>
                   ) : conversations.length === 0 ? (
@@ -237,35 +262,37 @@ export default function Messages() {
                       <p>No conversations yet</p>
                       <p className="text-xs mt-2">Start a conversation from someone's profile</p>
                     </div>
+                  ) : filteredConversations.length === 0 ? (
+                    <div className="p-6 text-center text-muted-foreground text-sm">No matches for &quot;{searchQuery}&quot;</div>
                   ) : (
                     <div className="divide-y">
-                      {conversations.map((conv) => (
+                      {filteredConversations.map((conv) => (
                         <button
                           key={conv.id}
                           onClick={() => handleSelectConversation(conv)}
                           className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
-                            activeConversation?.id === conv.id ? 'bg-muted' : ''
+                            activeConversation?.id === conv.id ? "bg-muted" : ""
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
-                              {conv.otherUserName?.charAt(0).toUpperCase() || 'U'}
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
+                              {conv.otherUserName?.charAt(0).toUpperCase() || "U"}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between gap-2">
                                 <p className="font-semibold truncate">{conv.otherUserName}</p>
                                 {conv.lastMessageAt && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {safeFormatDate(conv.lastMessageAt, 'MMM d')}
+                                  <span className="text-xs text-muted-foreground shrink-0">
+                                    {safeFormatDate(conv.lastMessageAt, "MMM d")}
                                   </span>
                                 )}
                               </div>
-                              {conv.lastMessage && (
+                              {conv.lastMessage && conv.lastMessage !== "0" && (
                                 <p className="text-sm text-muted-foreground truncate">{conv.lastMessage}</p>
                               )}
                             </div>
-                            {conv.unreadCount && conv.unreadCount > 0 && (
-                              <Badge className="ml-2">{conv.unreadCount}</Badge>
+                            {conv.unreadCount > 0 && (
+                              <Badge className="ml-2 shrink-0">{conv.unreadCount}</Badge>
                             )}
                           </div>
                         </button>
@@ -277,27 +304,36 @@ export default function Messages() {
             </Card>
           </div>
 
-          {/* Active Conversation */}
-          <div className="lg:col-span-2">
+          {/* Active Conversation - full width on mobile when selected */}
+          <div className={`lg:col-span-2 ${!activeConversation ? "hidden lg:flex lg:flex-col" : ""}`}>
             {activeConversation ? (
-              <Card className="h-[600px] flex flex-col overflow-hidden">
-                {/* Conversation Header */}
-                <div className="border-b p-4 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
-                        {activeConversation.otherUserName?.charAt(0).toUpperCase() || 'U'}
+              <Card className="min-h-[400px] h-[600px] max-h-[calc(100vh-12rem)] flex flex-col overflow-hidden">
+                {/* Conversation Header with back button on mobile */}
+                <div className="border-b p-4 bg-muted/30 shrink-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="lg:hidden shrink-0"
+                        onClick={handleBackToList}
+                        aria-label="Back to conversations"
+                      >
+                        <ArrowLeft className="h-5 w-5" />
+                      </Button>
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-semibold">
+                        {activeConversation.otherUserName?.charAt(0).toUpperCase() || "U"}
                       </div>
-                      <div>
-                        <p className="font-semibold">{activeConversation.otherUserName}</p>
-                        <p className="text-xs text-muted-foreground">{activeConversation.otherUserEmail}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{activeConversation.otherUserName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{activeConversation.otherUserEmail}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Link to={`/profile/${activeConversation.otherUserId}`}>
                         <Button variant="ghost" size="sm">
                           <User className="h-4 w-4 mr-1" />
-                          View Profile
+                          <span className="hidden sm:inline">View Profile</span>
                         </Button>
                       </Link>
                     </div>

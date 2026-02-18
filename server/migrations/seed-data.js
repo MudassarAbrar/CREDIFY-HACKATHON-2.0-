@@ -167,14 +167,17 @@ async function seedDatabase() {
         [skill1.id, learnerId, teacherId1, scheduledAt1, 2, 'completed', 40.00]
       );
 
-      // Create transaction for completed booking
+      // Create transaction for completed booking (descriptions match live flow)
+      const skill1Title = skills[0].title;
+      const learnerName = users[0].full_name;
+      const teacher1Name = users[1].full_name;
       await connection.query(
         'INSERT INTO transactions (user_id, type, amount, booking_id, description) VALUES (?, ?, ?, ?, ?)',
-        [teacherId1, 'earn', 60.00, booking1.insertId, 'Earned credits from completed session']
+        [teacherId1, 'earn', 60.00, booking1.insertId, `Earned credits from session with ${learnerName} (${skill1Title})`]
       );
       await connection.query(
         'INSERT INTO transactions (user_id, type, amount, booking_id, description) VALUES (?, ?, ?, ?, ?)',
-        [learnerId, 'spend', 40.00, booking1.insertId, 'Spent credits for learning session']
+        [learnerId, 'spend', 40.00, booking1.insertId, `Spent credits for session with ${teacher1Name} (${skill1Title})`]
       );
 
       // Create a confirmed booking

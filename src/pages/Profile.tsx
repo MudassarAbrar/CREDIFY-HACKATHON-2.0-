@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { profilesApi, skillsApi, reviewsApi, followsApi, getCurrentUser, skillRequestsApi, bookingsApi } from "@/lib/api";
@@ -16,6 +17,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
@@ -70,6 +72,10 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [followersModalOpen, setFollowersModalOpen] = useState(false);
+  const [modalFollowers, setModalFollowers] = useState<any[]>([]);
+  const [modalFollowing, setModalFollowing] = useState<any[]>([]);
+  const [modalFollowsLoading, setModalFollowsLoading] = useState(false);
   const { toast } = useToast();
 
   const currentUser = authUser || getCurrentUser();
@@ -146,9 +152,21 @@ export default function Profile() {
         }));
       setSkills(userSkills);
 
-      // Load reviews
+      // Load reviews (map snake_case from API to camelCase for display)
       const reviewsResponse = await reviewsApi.getUserReviews(parseInt(userId));
-      setReviews(reviewsResponse.reviews || []);
+      const normalizedReviews = (reviewsResponse.reviews || []).map((r: any) => ({
+        id: String(r.id),
+        reviewerId: String(r.reviewer_id),
+        revieweeId: String(r.reviewee_id),
+        bookingId: r.booking_id != null ? String(r.booking_id) : undefined,
+        rating: r.rating,
+        reviewText: r.review_text,
+        reviewType: r.review_type === 'as_teacher' ? 'as_teacher' : 'as_learner',
+        createdAt: r.created_at,
+        reviewerName: r.reviewer_name || r.reviewerName,
+        reviewerEmail: r.reviewer_email || r.reviewerEmail,
+      }));
+      setReviews(normalizedReviews);
 
       // Load user's skill requests (learning requests they've created)
       try {
@@ -285,10 +303,32 @@ export default function Profile() {
                 <BookOpen className="h-4 w-4" />
                 {stats.skillsTaught} taught · {stats.skillsLearned} learned
               </span>
-              <span className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setFollowersModalOpen(true);
+                  const id = typeof userId === 'string' ? parseInt(userId) : userId;
+                  if (id) {
+                    setModalFollowsLoading(true);
+                    Promise.all([
+                      followsApi.getFollowers(id),
+                      followsApi.getFollowing(id),
+                    ])
+                      .then(([fRes, gRes]) => {
+                        setModalFollowers(fRes.followers || []);
+                        setModalFollowing(gRes.following || []);
+                      })
+                      .catch(() => {
+                        toast({ title: "Error", description: "Failed to load followers/following", variant: "destructive" });
+                      })
+                      .finally(() => setModalFollowsLoading(false));
+                  }
+                }}
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
                 <UserPlus className="h-4 w-4" />
                 {stats.followers} followers · {stats.following} following
-              </span>
+              </button>
             </div>
             {user?.bio && <p className="mt-2 text-muted-foreground">{user.bio}</p>}
             
@@ -359,6 +399,86 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* Followers / Following modal */}
+        <Dialog open={followersModalOpen} onOpenChange={setFollowersModalOpen}>
+          <DialogContent className="max-w-md max-h-[80vh] flex flex-col" aria-describedby="followers-modal-desc">
+            <DialogHeader>
+              <DialogTitle>Followers & Following</DialogTitle>
+              <DialogDescription id="followers-modal-desc">People who follow this profile and who this profile follows.</DialogDescription>
+            </DialogHeader>
+            <Tabs defaultValue="followers" className="flex-1 min-h-0 flex flex-col">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="followers">Followers ({modalFollowers.length})</TabsTrigger>
+                <TabsTrigger value="following">Following ({modalFollowing.length})</TabsTrigger>
+              </TabsList>
+              <TabsContent value="followers" className="flex-1 min-h-0 mt-3 overflow-auto">
+                {modalFollowsLoading ? (
+                  <p className="text-sm text-muted-foreground py-4">Loading...</p>
+                ) : modalFollowers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No followers yet.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {modalFollowers.map((row: any) => {
+                      const uid = row.user_id ?? row.follower_id;
+                      const name = row.full_name || row.email?.split("@")[0] || "User";
+                      return (
+                        <li key={uid}>
+                          <Link
+                            to={`/profile/${uid}`}
+                            onClick={() => setFollowersModalOpen(false)}
+                            className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted transition-colors"
+                          >
+                            {row.avatar_url ? (
+                              <img src={row.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+                            ) : (
+                              <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
+                                <UserIcon className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span className="font-medium">{name}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </TabsContent>
+              <TabsContent value="following" className="flex-1 min-h-0 mt-3 overflow-auto">
+                {modalFollowsLoading ? (
+                  <p className="text-sm text-muted-foreground py-4">Loading...</p>
+                ) : modalFollowing.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">Not following anyone yet.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {modalFollowing.map((row: any) => {
+                      const uid = row.user_id ?? row.followee_id;
+                      const name = row.full_name || row.email?.split("@")[0] || "User";
+                      return (
+                        <li key={uid}>
+                          <Link
+                            to={`/profile/${uid}`}
+                            onClick={() => setFollowersModalOpen(false)}
+                            className="flex items-center gap-3 rounded-lg p-2 hover:bg-muted transition-colors"
+                          >
+                            {row.avatar_url ? (
+                              <img src={row.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+                            ) : (
+                              <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
+                                <UserIcon className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <span className="font-medium">{name}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
 
         <Tabs defaultValue="about" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
@@ -752,6 +872,7 @@ function EditProfileDialog({
 }) {
   const [formData, setFormData] = useState({
     full_name: '',
+    user_type: 'student' as 'student' | 'professional',
     bio: '',
     linkedin_url: '',
     github_url: '',
@@ -773,6 +894,7 @@ function EditProfileDialog({
     if (open && user) {
       setFormData({
         full_name: user?.fullName || '',
+        user_type: (user?.userType === 'professional' ? 'professional' : 'student'),
         bio: user?.bio || '',
         linkedin_url: user?.profile?.linkedinUrl || '',
         github_url: user?.profile?.githubUrl || '',
@@ -806,9 +928,10 @@ function EditProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-profile-desc">
         <DialogHeader>
           <DialogTitle>Edit Profile</DialogTitle>
+          <DialogDescription id="edit-profile-desc">Update your name, bio, links, and other profile details.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -820,6 +943,20 @@ function EditProfileDialog({
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
               />
             </div>
+            <div>
+              <Label htmlFor="user_type">User Type</Label>
+              <select
+                id="user_type"
+                value={formData.user_type}
+                onChange={(e) => setFormData({ ...formData, user_type: e.target.value as 'student' | 'professional' })}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="student">Student</option>
+                <option value="professional">Professional</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="location">Location</Label>
               <Input
@@ -873,7 +1010,8 @@ function EditProfileDialog({
             </div>
           </div>
 
-          {user?.userType === 'student' && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Education</p>
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="institution">Institution</Label>
@@ -881,6 +1019,7 @@ function EditProfileDialog({
                   id="institution"
                   value={formData.institution}
                   onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+                  placeholder="School or university"
                 />
               </div>
               <div>
@@ -889,6 +1028,7 @@ function EditProfileDialog({
                   id="degree"
                   value={formData.degree}
                   onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
+                  placeholder="e.g. BSc, MBA"
                 />
               </div>
               <div>
@@ -898,12 +1038,14 @@ function EditProfileDialog({
                   type="number"
                   value={formData.graduation_year}
                   onChange={(e) => setFormData({ ...formData, graduation_year: e.target.value })}
+                  placeholder="Year"
                 />
               </div>
             </div>
-          )}
+          </div>
 
-          {user?.userType === 'professional' && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">Professional</p>
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="company">Company</Label>
@@ -911,6 +1053,7 @@ function EditProfileDialog({
                   id="company"
                   value={formData.company}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  placeholder="Current or past employer"
                 />
               </div>
               <div>
@@ -919,6 +1062,7 @@ function EditProfileDialog({
                   id="job_title"
                   value={formData.job_title}
                   onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                  placeholder="e.g. Software Engineer"
                 />
               </div>
               <div>
@@ -928,10 +1072,11 @@ function EditProfileDialog({
                   type="number"
                   value={formData.years_experience}
                   onChange={(e) => setFormData({ ...formData, years_experience: e.target.value })}
+                  placeholder="Years"
                 />
               </div>
             </div>
-          )}
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>

@@ -18,7 +18,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Notification } from "@/lib/types";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
+
+function formatNotificationDate(value: string | number | null | undefined): string {
+  if (value == null || value === "") return "—";
+  const date = new Date(value);
+  return isValid(date) ? format(date, "MMM d, yyyy HH:mm") : "—";
+}
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -185,7 +191,7 @@ export default function Notifications() {
                             <p className="mt-1 text-sm text-muted-foreground">{notification.content}</p>
                           )}
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {format(new Date(notification.createdAt), 'MMM d, yyyy HH:mm')}
+                            {formatNotificationDate(notification.createdAt)}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">

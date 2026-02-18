@@ -172,6 +172,15 @@ export const confirmBooking = async (req, res, next) => {
       return res.status(400).json({ error: 'Booking is not in pending status' });
     }
 
+    // Get skill title and teacher name for description
+    const [[info]] = await pool.execute(
+      'SELECT s.title as skill_title, u.full_name as teacher_name FROM bookings b JOIN skills s ON b.skill_id = s.id JOIN users u ON b.teacher_id = u.id WHERE b.id = ?',
+      [id]
+    );
+    const skillTitle = info?.skill_title || 'Session';
+    const teacherName = info?.teacher_name || 'Teacher';
+    const spendDesc = `Spent credits for session with ${teacherName} (${skillTitle})`;
+
     // Deduct credits from learner
     await pool.execute(
       'UPDATE users SET credit_balance = credit_balance - ? WHERE id = ?',
@@ -181,7 +190,7 @@ export const confirmBooking = async (req, res, next) => {
     // Create transaction for learner (spend)
     await pool.execute(
       'INSERT INTO transactions (user_id, type, amount, booking_id, description) VALUES (?, ?, ?, ?, ?)',
-      [booking.learner_id, 'spend', booking.credits_cost, id, `Spent credits for booking #${id}`]
+      [booking.learner_id, 'spend', booking.credits_cost, id, spendDesc]
     );
 
     // Update booking status
@@ -333,6 +342,15 @@ export const confirmCompletion = async (req, res, next) => {
  * Helper function to release payment (credits to teacher)
  */
 const releasePayment = async (bookingId, booking) => {
+  // Get skill title and learner name for description
+  const [[info]] = await pool.execute(
+    'SELECT s.title as skill_title, u.full_name as learner_name FROM bookings b JOIN skills s ON b.skill_id = s.id JOIN users u ON b.learner_id = u.id WHERE b.id = ?',
+    [bookingId]
+  );
+  const skillTitle = info?.skill_title || 'Session';
+  const learnerName = info?.learner_name || 'Learner';
+  const earnDesc = `Earned credits from session with ${learnerName} (${skillTitle})`;
+
   // Calculate credits earned by teacher
   const creditsEarned = calculateEarnedCredits(
     booking.rate_per_hour,
@@ -350,7 +368,7 @@ const releasePayment = async (bookingId, booking) => {
   // Create transaction for teacher (earn)
   await pool.execute(
     'INSERT INTO transactions (user_id, type, amount, booking_id, description) VALUES (?, ?, ?, ?, ?)',
-    [booking.teacher_id, 'earn', creditsEarned, bookingId, `Earned credits from completed booking #${bookingId}`]
+    [booking.teacher_id, 'earn', creditsEarned, bookingId, earnDesc]
   );
 
   // Update booking status to completed and mark credits as released

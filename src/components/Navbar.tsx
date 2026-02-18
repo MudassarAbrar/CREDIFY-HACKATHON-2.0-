@@ -6,7 +6,13 @@ import { Coins, Menu, X, MessageSquare, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { messagesApi, notificationsApi, getCurrentUser } from "@/lib/api";
 
-const navLinks = [
+const guestNavLinks = [
+  { to: "/", label: "Home" },
+  { to: "/browse", label: "Browse" },
+  { to: "/contact", label: "Contact" },
+];
+
+const authNavLinks = [
   { to: "/browse", label: "Browse" },
   { to: "/wallet", label: "Wallet" },
   { to: "/teach", label: "Teach" },
@@ -66,9 +72,9 @@ export function Navbar() {
           <span>Skill<span className="text-primary">Swap</span></span>
         </Link>
 
-        {/* Desktop */}
+        {/* Desktop nav: guest = Home, Browse, Contact; logged-in = Wallet, Teach, Learn, Bookings */}
         <div className="hidden items-center gap-1 md:flex">
-          {navLinks.map((l) => (
+          {(isAuthenticated ? authNavLinks : guestNavLinks).map((l) => (
             <Link
               key={l.to}
               to={l.to}
@@ -137,7 +143,7 @@ export function Navbar() {
       {open && (
         <div className="border-t bg-background p-4 md:hidden">
           <div className="flex flex-col gap-2">
-            {navLinks.map((l) => (
+            {(isAuthenticated ? authNavLinks : guestNavLinks).map((l) => (
               <Link key={l.to} to={l.to} className="rounded-md px-3 py-2 text-sm font-medium" onClick={() => setOpen(false)}>
                 {l.label}
               </Link>

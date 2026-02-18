@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
-import { reviewsApi, bookingsApi, getCurrentUser } from "@/lib/api";
+import { reviewsApi, bookingsApi, profilesApi, getCurrentUser } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Star, Edit, Trash2 } from "lucide-react";
@@ -26,27 +27,84 @@ export default function Reviews() {
   const reviewSectionRef = useRef<HTMLDivElement>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [reviewedBookingIds, setReviewedBookingIds] = useState<Set<string>>(new Set());
+  const [forUserReviews, setForUserReviews] = useState<Review[]>([]);
+  const [forUserName, setForUserName] = useState<string>('');
+  const [forUserLoading, setForUserLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'as_teacher' | 'as_learner'>('all');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const currentUser = getCurrentUser();
 
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const userId = currentUser?.id ?? null;
+
   useEffect(() => {
-    if (currentUser) {
-      loadReviews();
-      loadCompletedBookings();
+    if (!userId) return;
+    setApiError(null);
+    loadReviews();
+    loadCompletedBookings();
+  }, [filter, userId]);
+
+  // When opened from profile "Write review" (?for=userId), load that user's reviews and name
+  useEffect(() => {
+    if (!forUserId) {
+      setForUserReviews([]);
+      setForUserName('');
+      return;
     }
-  }, [filter, currentUser]);
+    const loadForUser = async () => {
+      setForUserLoading(true);
+      try {
+        const [reviewsRes, profileRes] = await Promise.all([
+          reviewsApi.getUserReviews(parseInt(forUserId)),
+          profilesApi.getProfile(parseInt(forUserId)).catch(() => ({ user: {} })),
+        ]);
+        const raw = Array.isArray(reviewsRes?.reviews) ? reviewsRes.reviews : [];
+        setForUserReviews(raw.map(normalizeReview));
+        const name = profileRes?.user?.full_name || profileRes?.user?.fullName || profileRes?.user?.email?.split('@')[0] || 'This user';
+        setForUserName(name);
+      } catch {
+        setForUserReviews([]);
+        setForUserName('This user');
+      } finally {
+        setForUserLoading(false);
+      }
+    };
+    loadForUser();
+  }, [forUserId]);
+
+  const normalizeReview = (r: any): Review => ({
+    id: String(r.id),
+    reviewerId: String(r.reviewer_id),
+    revieweeId: String(r.reviewee_id),
+    bookingId: r.booking_id != null ? String(r.booking_id) : undefined,
+    rating: Number(r.rating),
+    reviewText: r.review_text ?? r.reviewText,
+    reviewType: (r.review_type ?? r.reviewType) === 'as_learner' ? 'as_learner' : 'as_teacher',
+    createdAt: r.created_at ?? r.createdAt ?? new Date().toISOString(),
+    reviewerName: r.reviewer_name ?? r.reviewerName,
+    reviewerEmail: r.reviewer_email ?? r.reviewerEmail,
+  });
 
   const loadReviews = async () => {
+    if (!userId) return;
     try {
       setLoading(true);
-      const response = await reviewsApi.getUserReviews(parseInt(currentUser.id), filter === 'all' ? undefined : filter);
-      setReviews(response.reviews || []);
+      setApiError(null);
+      const response = await reviewsApi.getUserReviews(parseInt(String(userId)), filter === 'all' ? undefined : filter);
+      const raw = response.reviews || [];
+      setReviews(raw.map(normalizeReview));
     } catch (error: any) {
+      const msg = error?.message || (error?.code === 'ECONNREFUSED' || error?.name === 'TypeError'
+        ? 'Cannot reach the server. Start the backend with: cd server && npm run dev'
+        : 'Failed to load reviews');
+      setApiError(msg);
+      setReviews([]);
       toast({
         title: "Error",
-        description: error.message || "Failed to load reviews",
+        description: msg,
         variant: "destructive",
       });
     } finally {
@@ -70,12 +128,26 @@ export default function Reviews() {
   });
 
   const loadCompletedBookings = async () => {
+    if (!userId) return;
     try {
-      const response = await bookingsApi.getBookings('completed');
-      const raw = response.bookings || [];
-      setBookings(raw.map(normalizeBooking));
+      const [bookingsRes, myReviewsRes] = await Promise.all([
+        bookingsApi.getBookings('completed'),
+        reviewsApi.getMyReviews().catch(() => ({ reviews: [] })),
+      ]);
+      const raw = bookingsRes.bookings || [];
+      const normalized = raw.map(normalizeBooking);
+      const seen = new Set<string>();
+      const deduped = normalized.filter((b) => {
+        if (seen.has(b.id)) return false;
+        seen.add(b.id);
+        return true;
+      });
+      setBookings(deduped);
+      const reviewedIds = new Set((myReviewsRes.reviews || []).map((r: any) => String(r.booking_id)));
+      setReviewedBookingIds(reviewedIds);
     } catch (error: any) {
-      // Ignore errors
+      if (!apiError) setApiError('Cannot reach the server. Start the backend with: cd server && npm run dev');
+      setBookings([]);
     }
   };
 
@@ -86,19 +158,27 @@ export default function Reviews() {
   }, [forUserId, bookings]);
 
   const handleCreateReview = async (bookingId: number, rating: number, reviewText: string, reviewType: 'as_teacher' | 'as_learner') => {
+    const bid = Number(bookingId);
+    const r = Number(rating);
+    if (!Number.isInteger(bid) || bid < 1 || r < 1 || r > 5) {
+      toast({ title: "Error", description: "Invalid booking or rating.", variant: "destructive" });
+      return;
+    }
     try {
       await reviewsApi.createReview({
-        booking_id: bookingId,
-        rating,
-        review_text: reviewText,
+        booking_id: bid,
+        rating: r,
+        review_text: reviewText || undefined,
         review_type: reviewType,
       });
       toast({ title: "Success", description: "Review created successfully" });
       loadReviews();
+      loadCompletedBookings(); // refresh so this booking disappears from "Leave a Review"
     } catch (error: any) {
+      const msg = error?.message || (error?.error) || "Failed to create review";
       toast({
         title: "Error",
-        description: error.message || "Failed to create review",
+        description: msg,
         variant: "destructive",
       });
     }
@@ -151,10 +231,17 @@ export default function Reviews() {
           </TabsList>
 
           <TabsContent value={filter}>
+            {apiError && (
+              <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-200">
+                {apiError}
+              </div>
+            )}
             {loading ? (
               <div className="text-center py-16 text-muted-foreground">Loading reviews...</div>
             ) : filteredReviews.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">No reviews yet</div>
+              <div className="text-center py-16 text-muted-foreground">
+                {apiError ? 'Fix the connection above, then refresh.' : 'No reviews yet'}
+              </div>
             ) : (
               <div className="space-y-4">
                 {filteredReviews.map((review) => (
@@ -201,12 +288,62 @@ export default function Reviews() {
           </TabsContent>
         </Tabs>
 
+        {/* When opened from profile "Write review": show that user's reviews */}
+        {forUserId && (
+          <Card className="mt-8" ref={reviewSectionRef}>
+            <CardHeader>
+              <CardTitle>Reviews for {forUserName}</CardTitle>
+              <p className="text-sm text-muted-foreground">Reviews this user has received from others.</p>
+            </CardHeader>
+            <CardContent>
+              {forUserLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading…</div>
+              ) : forUserReviews.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No reviews yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  {forUserReviews.map((review) => (
+                    <Card key={review.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="font-semibold">{review.reviewerName || 'Anonymous'}</span>
+                              <Badge variant="outline">{review.reviewType === 'as_teacher' ? 'As Teacher' : 'As Learner'}</Badge>
+                              <div className="flex items-center gap-1">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`h-4 w-4 ${
+                                      i < review.rating ? 'fill-primary text-primary' : 'text-muted-foreground'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            {review.reviewText && <p className="text-sm text-muted-foreground mb-2">{review.reviewText}</p>}
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(review.createdAt), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Create Review Section */}
-        <Card className="mt-8" ref={reviewSectionRef}>
+        <Card className="mt-8" ref={forUserId ? undefined : reviewSectionRef}>
           <CardHeader>
             <CardTitle>Leave a Review</CardTitle>
-            {forUserId && (
-              <p className="text-sm text-muted-foreground">Completed sessions with this user are listed below.</p>
+            {forUserId ? (
+              <p className="text-sm text-muted-foreground">Completed sessions with this user are listed below. Pick one to leave your review.</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Pick a completed session to leave a review.</p>
             )}
           </CardHeader>
           <CardContent>
@@ -216,9 +353,9 @@ export default function Reviews() {
               <div className="space-y-4">
                 {(forUserId
                   ? bookings.filter(
-                      (b) => b.teacherId === forUserId || b.learnerId === forUserId
+                      (b) => (b.teacherId === forUserId || b.learnerId === forUserId) && !reviewedBookingIds.has(b.id)
                     )
-                  : bookings
+                  : bookings.filter((b) => !reviewedBookingIds.has(b.id))
                 ).map((booking) => (
                   <CreateReviewDialog
                     key={booking.id}
@@ -227,8 +364,11 @@ export default function Reviews() {
                     onCreate={handleCreateReview}
                   />
                 ))}
-                {forUserId && bookings.filter((b) => b.teacherId === forUserId || b.learnerId === forUserId).length === 0 && (
-                  <p className="text-sm text-muted-foreground">No completed sessions with this user yet.</p>
+                {forUserId && bookings.filter((b) => (b.teacherId === forUserId || b.learnerId === forUserId) && !reviewedBookingIds.has(b.id)).length === 0 && (
+                  <p className="text-sm text-muted-foreground">No completed sessions with this user yet, or you’ve already reviewed them.</p>
+                )}
+                {!forUserId && bookings.filter((b) => !reviewedBookingIds.has(b.id)).length === 0 && bookings.length > 0 && (
+                  <p className="text-sm text-muted-foreground">You’ve already reviewed all your completed sessions.</p>
                 )}
               </div>
             )}
@@ -273,16 +413,21 @@ function CreateReviewDialog({
     setReviewText("");
   };
 
+  const sessionDateStr = booking.scheduledAt
+    ? format(new Date(booking.scheduledAt), 'MMM d, yyyy')
+    : '';
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full justify-start">
-          Review {revieweeName} - {booking.skillTitle}
+          Review {revieweeName} – {booking.skillTitle}{sessionDateStr ? ` (${sessionDateStr})` : ''}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent aria-describedby="review-dialog-desc">
         <DialogHeader>
           <DialogTitle>Review {revieweeName}</DialogTitle>
+          <DialogDescription id="review-dialog-desc">Rate your session and optionally add a short review.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>

@@ -71,6 +71,20 @@ export const createReview = async (req, res, next) => {
   }
 };
 
+/** GET /reviews/my - reviews written by current user (for filtering "already reviewed" bookings) */
+export const getMyReviews = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const [reviews] = await pool.execute(
+      'SELECT id, booking_id, review_type FROM reviews WHERE reviewer_id = ?',
+      [userId]
+    );
+    res.json({ reviews });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getUserReviews = async (req, res, next) => {
   try {
     const { userId } = req.params;

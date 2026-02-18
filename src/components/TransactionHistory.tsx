@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 interface TransactionHistoryProps {
@@ -69,9 +70,10 @@ export function TransactionHistory({ transactions, filter = "all" }: Transaction
         </TableBody>
       </Table>
       <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-describedby="tx-detail-desc">
           <DialogHeader>
             <DialogTitle>Transaction details</DialogTitle>
+            <DialogDescription id="tx-detail-desc">Details for this credit transaction: who you worked with, session, and amount.</DialogDescription>
           </DialogHeader>
           {selected && (
             <div className="space-y-2 text-sm">
@@ -79,7 +81,9 @@ export function TransactionHistory({ transactions, filter = "all" }: Transaction
               <p><span className="font-medium">Worked with:</span> {selected.otherPartyName || "—"}</p>
               <p><span className="font-medium">Skill / session:</span> {selected.skillTitle || "—"}</p>
               <p><span className="font-medium">Session date:</span> {formatDate(selected.scheduledAt) || formatDate(selected.createdAt)}</p>
-              {selected.duration != null && <p><span className="font-medium">Duration:</span> {selected.duration} min</p>}
+              {selected.duration != null && (
+                <p><span className="font-medium">Session length:</span> {selected.duration === 1 ? '1 hour' : `${Number(selected.duration)} hours`}</p>
+              )}
               <p><span className="font-medium">Amount:</span> {selected.type === "earn" ? "+" : "-"}{selected.amount} credits</p>
             </div>
           )}

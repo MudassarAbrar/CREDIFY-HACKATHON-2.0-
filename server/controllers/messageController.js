@@ -45,10 +45,18 @@ export const getConversation = async (req, res, next) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    // Check if user is part of conversation
+    // Get conversation with other user info for header
     const [conversations] = await pool.execute(
-      'SELECT * FROM conversations WHERE id = ? AND (participant1_id = ? OR participant2_id = ?)',
-      [id, userId, userId]
+      `SELECT c.*,
+        CASE WHEN c.participant1_id = ? THEN u2.id ELSE u1.id END as other_user_id,
+        CASE WHEN c.participant1_id = ? THEN u2.full_name ELSE u1.full_name END as other_user_name,
+        CASE WHEN c.participant1_id = ? THEN u2.email ELSE u1.email END as other_user_email,
+        CASE WHEN c.participant1_id = ? THEN u2.avatar_url ELSE u1.avatar_url END as other_user_avatar
+      FROM conversations c
+      JOIN users u1 ON c.participant1_id = u1.id
+      JOIN users u2 ON c.participant2_id = u2.id
+      WHERE c.id = ? AND (c.participant1_id = ? OR c.participant2_id = ?)`,
+      [userId, userId, userId, userId, id, userId, userId]
     );
 
     if (conversations.length === 0) {

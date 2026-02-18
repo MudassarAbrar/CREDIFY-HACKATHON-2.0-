@@ -69,6 +69,7 @@ export const updateProfile = async (req, res, next) => {
     const {
       full_name,
       bio,
+      user_type,
       linkedin_url,
       github_url,
       portfolio_url,
@@ -96,6 +97,10 @@ export const updateProfile = async (req, res, next) => {
     if (bio !== undefined) {
       userUpdates.push('bio = ?');
       userValues.push(bio);
+    }
+    if (user_type !== undefined && ['student', 'professional'].includes(user_type)) {
+      userUpdates.push('user_type = ?');
+      userValues.push(user_type);
     }
 
     if (userUpdates.length > 0) {

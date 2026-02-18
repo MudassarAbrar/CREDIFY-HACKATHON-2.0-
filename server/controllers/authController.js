@@ -144,6 +144,13 @@ export const googleLogin = async (req, res, next) => {
       });
     }
 
+    if (!process.env.JWT_SECRET) {
+      console.error('Google login failed: JWT_SECRET is not set in server .env');
+      return res.status(503).json({
+        error: 'Server auth is not configured. Set JWT_SECRET in server/.env (see ENV_SETUP.md)',
+      });
+    }
+
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID,
@@ -212,8 +219,14 @@ export const googleLogin = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('Google login error:', error.message || error);
     if (error.message && error.message.includes('Token used too late')) {
       return res.status(401).json({ error: 'Google sign-in expired. Please try again.' });
+    }
+    if (error.message && (error.message.includes('audience') || error.message.includes('Audience'))) {
+      return res.status(400).json({
+        error: 'Invalid Google client. Ensure GOOGLE_CLIENT_ID in server/.env matches your Google Cloud OAuth client ID.',
+      });
     }
     next(error);
   }

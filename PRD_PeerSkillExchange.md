@@ -60,13 +60,14 @@ A Peer Skill Exchange marketplace where users (students and professionals) trade
 - **Database:** MySQL (user data, profiles, skills, bookings, transactions, notifications, messages, reviews).
 
 **Key Features Implemented:**
-- Auth: Register, login, Google OAuth (optional via `VITE_GOOGLE_CLIENT_ID`), JWT, refresh user (balance/profile).
+- Auth: Register, login, Google OAuth (optional via `VITE_GOOGLE_CLIENT_ID`), JWT, refresh user (balance/profile). Google sign-up defaults to Student; **user type (Student/Professional) editable** in Profile → Edit Profile (backend accepts `user_type` on profile update).
 - Skills: Create offer/request, browse (excluding own teaching skills), categories.
-- Bookings: Request → confirm/cancel → complete → two-party completion confirmation → release payment; credits deducted on confirm, released to teacher on completion.
+- Bookings: Request → confirm/cancel → complete → two-party completion confirmation → release payment; credits deducted on confirm, released to teacher on completion. **Teacher/learner name on booking cards links to that user’s profile.**
 - Wallet: Balance display, transaction history, filters (all/earn/spend); transaction detail modal (other party, skill, date, duration).
 - Notifications: In-app for booking and message events; link to relevant page.
-- Messages: Conversations, send message, notifications on new message.
-- Profile: View own and others’; edit own (name, bio, links, location, timezone, availability, education, work, languages, response time).
+- Messages: **Search** at top of conversation list; no “0” in preview/unread when empty; **mobile**: list-only by default, tap conversation to open chat, **Back** button returns to list; scrollable conversation list.
+- Profile: View own and others’; edit own (name, **user type**, bio, links, location, timezone, availability, education, work, languages, response time). **Reviews tab** shows **reviewer name** for each review (not “Anonymous”). **Followers/Following**: click “X followers · Y following” to open modal with Followers and Following tabs, listing users with links to their profiles.
+- Nav (logged in): Browse first, then Wallet, Teach, Learn, Bookings.
 - Reviews: List (as teacher / as learner), leave review for completed bookings; “Write review” on another user’s profile links to Reviews filtered by that user.
 - Disputes: Placeholder/“coming soon” in UI.
 
@@ -98,4 +99,4 @@ A Peer Skill Exchange marketplace where users (students and professionals) trade
 
 ---
 
-*Last updated to reflect implemented features: auth (email + Google), browse (hide own skills), wallet/credits refresh, notifications, transaction details, profile edit, write review from profile and Reviews page.*
+*Last updated: user type editable (incl. Google users), profile reviews show reviewer name, booking names link to profiles, messages search + mobile back + scroll, followers/following modal, nav order (Browse → Wallet).*

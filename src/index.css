@@ -13,7 +13,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 6%;
 
-    --primary: 221 83% 53%;
+    --primary: 274 53% 56%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 5% 93%;
@@ -22,7 +22,7 @@
     --muted: 240 5% 93%;
     --muted-foreground: 240 4% 46%;
 
-    --accent: 221 83% 53%;
+    --accent: 274 53% 56%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -30,18 +30,18 @@
 
     --border: 240 6% 88%;
     --input: 240 6% 88%;
-    --ring: 221 83% 53%;
+    --ring: 274 53% 56%;
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary: 274 53% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-ring: 274 53% 56%;
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -59,7 +59,7 @@
     --popover: 240 10% 10%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 221 83% 53%;
+    --primary: 274 53% 56%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 5% 18%;
@@ -68,7 +68,7 @@
     --muted: 240 5% 18%;
     --muted-foreground: 240 4% 60%;
 
-    --accent: 221 83% 53%;
+    --accent: 274 53% 56%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 30%;
@@ -76,16 +76,16 @@
 
     --border: 240 5% 20%;
     --input: 240 5% 20%;
-    --ring: 221 83% 53%;
+    --ring: 274 53% 56%;
 
     --sidebar-background: 240 10% 8%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary: 274 53% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 221 83% 53%;
+    --sidebar-ring: 274 53% 56%;
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -118,6 +118,6 @@
   }
 
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-[hsl(221,83%,63%)] bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-[hsl(274,53%,65%)] bg-clip-text text-transparent;
   }
 }

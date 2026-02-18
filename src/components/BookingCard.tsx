@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Booking } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +67,10 @@ export function BookingCard({ booking, role, onConfirm, onCancel, onComplete }: 
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
             <User className="h-3.5 w-3.5" />
-            {role === "learner" ? "Teacher: " : "Learner: "}{otherPerson}
+            {role === "learner" ? "Teacher: " : "Learner: "}
+            <Link to={`/profile/${role === "learner" ? booking.teacherId : booking.learnerId}`} className="hover:text-primary hover:underline font-medium">
+              {otherPerson}
+            </Link>
           </span>
           <span className="flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5" />

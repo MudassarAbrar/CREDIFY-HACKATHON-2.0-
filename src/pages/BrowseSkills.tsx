@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { SkillCard } from "@/components/SkillCard";
 import { SKILL_CATEGORIES, Skill } from "@/lib/types";
@@ -16,9 +16,11 @@ import { Label } from "@/components/ui/label";
 import { format, addDays } from "date-fns";
 
 export default function BrowseSkills() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'teaching' | 'learning'>('teaching');
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
+  const [search, setSearch] = useState(searchParams.get('search') || "");
+  const [category, setCategory] = useState(searchParams.get('category') || "all");
   const [complexity, setComplexity] = useState("all");
   const [selected, setSelected] = useState<Skill | null>(null);
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -39,12 +41,13 @@ export default function BrowseSkills() {
     } else {
       loadSkillRequests();
     }
-  }, [category, complexity, mode]);
+  }, [category, complexity, mode, search]);
 
-  // Load user's existing bookings to prevent duplicates
+  // Load user's existing bookings to prevent duplicate requests for same skill
+  const currentUserId = currentUser?.id ?? null;
   useEffect(() => {
+    if (!currentUserId) return;
     const loadUserBookings = async () => {
-      if (!currentUser) return;
       try {
         const response = await bookingsApi.getBookings();
         setUserBookings(response.bookings || []);
@@ -53,7 +56,7 @@ export default function BrowseSkills() {
       }
     };
     loadUserBookings();
-  }, [currentUser]);
+  }, [currentUserId]);
 
   const loadSkills = async () => {
     try {
@@ -111,7 +114,14 @@ export default function BrowseSkills() {
   };
 
   const filteredSkills = skills.filter((s) => {
-    if (search && !s.title.toLowerCase().includes(search.toLowerCase()) && !s.description.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search) {
+      const searchLower = search.toLowerCase();
+      if (!s.title.toLowerCase().includes(searchLower) && 
+          !s.description.toLowerCase().includes(searchLower) &&
+          !s.teacherName.toLowerCase().includes(searchLower)) {
+        return false;
+      }
+    }
     return s.status === "active";
   });
 
@@ -135,7 +145,7 @@ export default function BrowseSkills() {
         description: "Please log in to request a session",
         variant: "destructive",
       });
-      window.location.href = '/login';
+      setTimeout(() => navigate('/login', { replace: true }), 100);
       return;
     }
 

@@ -255,6 +255,7 @@ export const reviewsApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  getMyReviews: () => apiRequest<{ reviews: { id: number; booking_id: number; review_type: string }[] }>('/reviews/my'),
   getUserReviews: (userId: number, type?: string) => {
     const query = type ? `?type=${type}` : '';
     return apiRequest<{ reviews: any[] }>(`/reviews/user/${userId}${query}`);

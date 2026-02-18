@@ -12,14 +12,15 @@ Access to quality skill development is often limited by cost and lack of peer le
 
 ### Features
 
-- **Auth** – Email/password and **Google OAuth** (optional), JWT-based sessions
+- **Auth** – Email/password and **Google OAuth** (optional), JWT-based sessions. Google users default to “Student”; **user type (Student/Professional) is editable** in Profile → Edit Profile.
 - **Skills** – Create and browse skill offers/requests; your own teaching skills are hidden from browse
-- **Bookings** – Request → confirm → complete → two-party completion → **payment release** (credits)
+- **Bookings** – Request → confirm → complete → two-party completion → **payment release** (credits). **Click teacher/learner name** on a booking card to open their profile.
 - **Wallet** – Live credit balance, transaction history (earn/spend), **click a row** to see who you worked with, when, and which skill
 - **Notifications** – New booking request, confirmed, payment released, new message
-- **Messages** – In-app conversations with other users
-- **Profile** – Full profile edit (name, bio, links, location, timezone, availability, education, work, languages, response time)
+- **Messages** – In-app conversations; **search** at the top; no “0” preview; **mobile**: list-only view, tap conversation to open chat, **Back** returns to list; scrollable list
+- **Profile** – Full profile edit (name, **user type**, bio, links, location, timezone, availability, education, work, languages, response time). **Reviews tab** shows **reviewer name** (not “Anonymous”) for reviews on your profile. **Followers/Following** – click “X followers · Y following” to open a modal with lists and links to profiles.
 - **Reviews** – Leave reviews for people you taught or learned from (from their profile or the Reviews page)
+- **Nav (logged in)** – Browse first, then Wallet, Teach, Learn, Bookings
 - **Disputes** – Placeholder for future admin/agent resolution
 
 ---
@@ -130,6 +131,7 @@ npm run dev
 | Notifications | `GET /api/notifications` |
 | Messages   | `GET/POST /api/messages`, conversations |
 | Reviews    | `GET/POST /api/reviews` |
+| Follows    | `GET /api/follows/:userId/followers`, `GET /api/follows/:userId/following`, `POST/DELETE /api/follows/:userId` (auth) |
 
 All protected routes use `Authorization: Bearer <token>`.
 
