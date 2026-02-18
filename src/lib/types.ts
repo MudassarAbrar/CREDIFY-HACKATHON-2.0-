@@ -4,12 +4,15 @@ export type SkillStatus = "active" | "inactive";
 export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
 export type TransactionType = "earn" | "spend";
 
+export type UserRole = "user" | "admin";
+
 export interface User {
   id: string;
   email: string;
   fullName: string;
   userType: UserType;
   creditBalance: number;
+  role?: UserRole;
   avatarUrl?: string;
   bio?: string;
   joinedAt: string;
@@ -18,6 +21,42 @@ export interface User {
   skillsLearned: number;
   profile?: UserProfile;
   stats?: UserStats;
+}
+
+export type DisputeStatus = "open" | "in_review" | "resolved" | "closed";
+
+export interface Dispute {
+  id: number;
+  booking_id: number;
+  raised_by_user_id: number;
+  status: DisputeStatus;
+  subject: string;
+  description: string;
+  proof_urls?: string[] | null;
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string | null;
+  resolved_by?: number | null;
+  resolution_notes?: string | null;
+  learner_id?: number;
+  teacher_id?: number;
+  learner_name?: string;
+  teacher_name?: string;
+  skill_title?: string;
+  raised_by_name?: string;
+  booking_status?: string;
+  scheduled_at?: string;
+  credits_cost?: number;
+}
+
+export interface DisputeMessage {
+  id: number;
+  dispute_id: number;
+  sender_id: number;
+  content: string;
+  is_internal?: boolean;
+  created_at: string;
+  sender_name?: string;
 }
 
 export interface UserProfile {

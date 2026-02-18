@@ -30,6 +30,7 @@ export const convertUser = (backendUser: any): User => {
     fullName: backendUser.full_name || backendUser.email?.split('@')[0] || 'User',
     userType: backendUser.user_type === 'professional' ? 'professional' : 'student',
     creditBalance: parseFloat(backendUser.credit_balance || 0),
+    role: backendUser.role === 'admin' ? 'admin' : 'user',
     bio: backendUser.bio || '',
     joinedAt: backendUser.created_at ? new Date(backendUser.created_at).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
     rating: 0,

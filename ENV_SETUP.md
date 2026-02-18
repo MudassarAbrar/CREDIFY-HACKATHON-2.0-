@@ -54,6 +54,12 @@ DB_USER=root
 DB_PASSWORD=your-password
 DB_NAME=peer_skill_exchange
 DB_PORT=3306
+
+# Admin user (optional – used by server/scripts/seed-admin.js)
+# If set, running the seed-admin script creates or updates this user with role=admin.
+# If not set, defaults: admin@credify.local / Admin123!
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=your-secure-admin-password
 ```
 
 - **Which file?**  
@@ -107,19 +113,36 @@ Add these in Google Cloud Console under your OAuth client:
 
 ---
 
-## 5. Checklist
+## 5. Admin user and disputes
+
+To use the **Admin panel** (dispute resolution, stats):
+
+1. **Run migration 004** (adds `role` to users and creates `disputes` / `dispute_messages` tables):
+   ```bash
+   cd server && node migrations/run-migration-004.js && cd ..
+   ```
+2. **Create an admin user** (optional env in `server/.env`: `ADMIN_EMAIL`, `ADMIN_PASSWORD`; if unset, uses `admin@credify.local` / `Admin123!`):
+   ```bash
+   cd server && node scripts/seed-admin.js
+   ```
+3. Log in with that admin email and password; the **Admin** link will appear in the navbar and you can open `/admin`.
+
+---
+
+## 6. Checklist
 
 - [ ] Root **`.env`** (or `.env.local`) with `VITE_API_URL` and `VITE_GOOGLE_CLIENT_ID`.
 - [ ] **`server/.env`** with `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `FRONTEND_URL`, and DB vars if needed.
 - [ ] Google Cloud OAuth client created; Client ID copied into both env files.
 - [ ] Redirect/origin URLs set in Google Console for local and production.
 - [ ] Restart Vite dev server and Node server after changing env files.
+- [ ] (Optional) Migration 004 and `node server/scripts/seed-admin.js` for admin and disputes.
 
 After this, OAuth (Continue with Google) and JWT-based auth can work end-to-end.
 
 ---
 
-## 6. Troubleshooting
+## 7. Troubleshooting
 
 ### "POST /api/auth/google 500 (Internal Server Error)"
 

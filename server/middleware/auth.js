@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import pool from '../config/database.js';
 
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -15,6 +16,23 @@ export const authenticateToken = (req, res, next) => {
     req.user = user;
     next();
   });
+};
+
+/** Require authenticated user to have role === 'admin'. Use after authenticateToken. */
+export const requireAdmin = async (req, res, next) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, role FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    if (rows.length === 0 || (rows[0].role || 'user') !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    req.user.role = 'admin';
+    next();
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const optionalAuth = (req, res, next) => {

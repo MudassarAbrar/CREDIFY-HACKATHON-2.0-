@@ -366,3 +366,47 @@ export const notificationsApi = {
       method: 'DELETE',
     }),
 };
+
+// Admin API (requires admin role)
+export const adminApi = {
+  getStats: () => apiRequest<{ stats: { totalUsers: number; activeSkills: number; totalBookings: number; openDisputes: number } }>('/admin/stats'),
+  getDisputes: (params?: { status?: string; limit?: number; offset?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    if (params?.limit != null) q.set('limit', String(params.limit));
+    if (params?.offset != null) q.set('offset', String(params.offset));
+    const query = q.toString();
+    return apiRequest<{ disputes: any[] }>(`/admin/disputes${query ? `?${query}` : ''}`);
+  },
+  getDispute: (id: number) =>
+    apiRequest<{ dispute: any; messages: any[] }>(`/admin/disputes/${id}`),
+  getBookingConversation: (bookingId: number) =>
+    apiRequest<{ conversation: any; messages: any[] }>(`/admin/bookings/${bookingId}/conversation`),
+  postDisputeMessage: (id: number, content: string, isInternal?: boolean) =>
+    apiRequest<{ message: any }>(`/admin/disputes/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content, is_internal: !!isInternal }),
+    }),
+  updateDispute: (id: number, data: { status?: string; resolution_notes?: string }) =>
+    apiRequest<{ dispute: any }>(`/admin/disputes/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+};
+
+// Disputes API (user - own disputes)
+export const disputesApi = {
+  create: (data: { booking_id: number; subject: string; description: string; proof_urls?: string[] }) =>
+    apiRequest<{ dispute: any }>('/disputes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  getMyDisputes: () => apiRequest<{ disputes: any[] }>('/disputes'),
+  getDispute: (id: number) =>
+    apiRequest<{ dispute: any; messages: any[] }>(`/disputes/${id}`),
+  postMessage: (id: number, content: string) =>
+    apiRequest<{ message: any }>(`/disputes/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+};

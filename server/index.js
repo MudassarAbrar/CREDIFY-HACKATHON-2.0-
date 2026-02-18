@@ -16,6 +16,8 @@ import skillRequestRoutes from './routes/skillRequests.js';
 import messageRoutes from './routes/messages.js';
 import followRoutes from './routes/follows.js';
 import notificationRoutes from './routes/notifications.js';
+import adminRoutes from './routes/admin.js';
+import disputeRoutes from './routes/disputes.js';
 
 dotenv.config();
 
@@ -48,6 +50,8 @@ app.use('/api/skill-requests', skillRequestRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/follows', followRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/disputes', disputeRoutes);
 
 // Error handling
 app.use(notFound);

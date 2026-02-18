@@ -28,12 +28,11 @@ export const register = async (req, res, next) => {
     // Hash password
     const password_hash = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user (role defaults to 'user')
     const [result] = await pool.execute(
-      'INSERT INTO users (email, password_hash, user_type, full_name, credit_balance) VALUES (?, ?, ?, ?, 100.00)',
+      "INSERT INTO users (email, password_hash, user_type, full_name, credit_balance, role) VALUES (?, ?, ?, ?, 100.00, 'user')",
       [email, password_hash, user_type, full_name || null]
     );
-
     const userId = result.insertId;
 
     // Generate JWT
@@ -43,9 +42,9 @@ export const register = async (req, res, next) => {
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
-    // Get user data
+    // Get user data (include role)
     const [users] = await pool.execute(
-      'SELECT id, email, user_type, credit_balance, full_name, created_at FROM users WHERE id = ?',
+      "SELECT id, email, user_type, credit_balance, full_name, created_at, COALESCE(role, 'user') AS role FROM users WHERE id = ?",
       [userId]
     );
 
@@ -102,7 +101,8 @@ export const login = async (req, res, next) => {
         user_type: user.user_type,
         credit_balance: user.credit_balance,
         full_name: user.full_name,
-        created_at: user.created_at
+        created_at: user.created_at,
+        role: user.role || 'user'
       }
     });
   } catch (error) {
@@ -113,7 +113,7 @@ export const login = async (req, res, next) => {
 export const getMe = async (req, res, next) => {
   try {
     const [users] = await pool.execute(
-      'SELECT id, email, user_type, credit_balance, full_name, created_at FROM users WHERE id = ?',
+      "SELECT id, email, user_type, credit_balance, full_name, created_at, COALESCE(role, 'user') AS role FROM users WHERE id = ?",
       [req.user.id]
     );
 
@@ -166,7 +166,7 @@ export const googleLogin = async (req, res, next) => {
     const avatarUrl = payload.picture || null;
 
     let [users] = await pool.execute(
-      'SELECT id, email, user_type, credit_balance, full_name, created_at FROM users WHERE email = ?',
+      "SELECT id, email, user_type, credit_balance, full_name, created_at, COALESCE(role, 'user') AS role FROM users WHERE email = ?",
       [email]
     );
 
@@ -180,7 +180,7 @@ export const googleLogin = async (req, res, next) => {
         [fullName, avatarUrl, userRow.id]
       );
       const [updated] = await pool.execute(
-        'SELECT id, email, user_type, credit_balance, full_name, created_at, avatar_url FROM users WHERE id = ?',
+        "SELECT id, email, user_type, credit_balance, full_name, created_at, avatar_url, COALESCE(role, 'user') AS role FROM users WHERE id = ?",
         [userRow.id]
       );
       userRow = updated[0];
@@ -188,12 +188,11 @@ export const googleLogin = async (req, res, next) => {
       // Create new user (no password - they use Google only; store a placeholder hash)
       const placeholderHash = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
       const [result] = await pool.execute(
-        `INSERT INTO users (email, password_hash, user_type, full_name, credit_balance, avatar_url)
-         VALUES (?, ?, 'student', ?, 100.00, ?)`,
+        "INSERT INTO users (email, password_hash, user_type, full_name, credit_balance, avatar_url, role) VALUES (?, ?, 'student', ?, 100.00, ?, 'user')",
         [email, placeholderHash, fullName, avatarUrl]
       );
       const [newUser] = await pool.execute(
-        'SELECT id, email, user_type, credit_balance, full_name, created_at, avatar_url FROM users WHERE id = ?',
+        "SELECT id, email, user_type, credit_balance, full_name, created_at, avatar_url, COALESCE(role, 'user') AS role FROM users WHERE id = ?",
         [result.insertId]
       );
       userRow = newUser[0];
@@ -216,6 +215,7 @@ export const googleLogin = async (req, res, next) => {
         full_name: userRow.full_name,
         avatar_url: userRow.avatar_url,
         created_at: userRow.created_at,
+        role: userRow.role || 'user',
       },
     });
   } catch (error) {

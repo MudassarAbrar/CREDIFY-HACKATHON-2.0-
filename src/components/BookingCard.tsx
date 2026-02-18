@@ -1,10 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Booking } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Coins, User, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { format, isValid, parseISO } from "date-fns";
 
 const statusStyles: Record<string, string> = {
@@ -37,15 +36,11 @@ interface BookingCardProps {
 }
 
 export function BookingCard({ booking, role, onConfirm, onCancel, onComplete }: BookingCardProps) {
-  const { toast } = useToast();
+  const navigate = useNavigate();
   const otherPerson = role === "learner" ? booking.teacherName : booking.learnerName;
 
   const handleDispute = () => {
-    toast({
-      title: "Payment dispute",
-      description: "Dispute resolution is coming soon. For now, please contact support if you have an issue with this booking.",
-      variant: "default",
-    });
+    navigate(`/disputes/new?bookingId=${booking.id}`);
   };
 
   // Determine confirmation status for both-party payment release flow

@@ -18,9 +18,16 @@ import Reviews from "./pages/Reviews";
 import Notifications from "./pages/Notifications";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Admin from "./pages/Admin";
+import { AdminLayout } from "./components/AdminLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminDisputes from "./pages/AdminDisputes";
+import AdminDisputeDetail from "./pages/AdminDisputeDetail";
+import Disputes from "./pages/Disputes";
+import NewDispute from "./pages/NewDispute";
+import DisputeDetail from "./pages/DisputeDetail";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
+import { AdminRoute } from "./components/AdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -54,7 +61,16 @@ const App = () => (
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin" element={<AdminRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="disputes" element={<AdminDisputes />} />
+                <Route path="disputes/:id" element={<AdminDisputeDetail />} />
+              </Route>
+            </Route>
+            <Route path="/disputes" element={<Disputes />} />
+            <Route path="/disputes/new" element={<NewDispute />} />
+            <Route path="/disputes/:id" element={<DisputeDetail />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

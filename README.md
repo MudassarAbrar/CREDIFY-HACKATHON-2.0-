@@ -71,10 +71,14 @@ cd server && npm install && cd ..
 ```bash
 cd server
 node run-migration.js
+node migrations/run-migration-004.js
+node scripts/seed-admin.js
 # If you have seed data:
 # node migrations/seed-data.js
 cd ..
 ```
+
+Migration 004 adds the admin role and dispute tables. The seed-admin script creates an admin user (set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `server/.env`, or use defaults; see [ENV_SETUP.md](./ENV_SETUP.md)).
 
 ### 4. Run
 
